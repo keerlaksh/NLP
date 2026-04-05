@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analyzer | Advanced Visualization</title>
+    <!-- Chart.js CDN for beautiful pie charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .form-section {
+            padding: 40px 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #4a5568;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            background: white;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            width: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .results-section {
+            padding: 30px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            display: none;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .review-display {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border-left: 4px solid #6366f1;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .review-display h3 {
+            color: #374151;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .review-text {
+            color: #6b7280;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        .sentiment-results {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .sentiment-results h3 {
+            color: #374151;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            text-align: center;
+        }
+
+        /* Enhanced double column layout for bars + pie chart */
+        .visualization-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .bars-container {
+            flex: 1.2;
+            min-width: 200px;
+        }
+
+        .pie-container {
+            flex: 1;
+            min-width: 220px;
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 15px 10px 10px 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid #f0f0f0;
+            text-align: center;
+        }
+
+        .pie-container h4 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 15px;
+            letter-spacing: 0.5px;
+        }
+
+        canvas#sentimentPieChart {
+            max-height: 220px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .sentiment-bars {
+            display: flex;
+            height: 60px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .sentiment-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: width 0.8s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .positive-bar {
+            background: linear-gradient(135deg, #10b981, #34d399);
+        }
+
+        .negative-bar {
+            background: linear-gradient(135deg, #ef4444, #f87171);
+        }
+
+        .neutral-bar {
+            background: linear-gradient(135deg, #6b7280, #9ca3af);
+        }
+
+        .sentiment-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                left: -100%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+
+        .sentiment-legend {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #4a5568;
+            background: #f1f5f9;
+            padding: 5px 12px;
+            border-radius: 40px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 20px;
+            margin-right: 8px;
+        }
+
+        .confidence-meter {
+            margin-top: 20px;
+            text-align: center;
+            background: linear-gradient(120deg, #f3f4f6, #ffffff);
+            padding: 15px;
+            border-radius: 24px;
+            border: 1px solid #eef2ff;
+        }
+
+        .confidence-score {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .confidence-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        .example-prompts {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(99, 102, 241, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.1);
+        }
+
+        .example-prompts h4 {
+            color: #6366f1;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .example-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .example-btn {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #6b7280;
+        }
+
+        .example-btn:hover {
+            border-color: #6366f1;
+            color: #6366f1;
+            background: rgba(99, 102, 241, 0.05);
+            transform: translateY(-2px);
+        }
+
+        /* small badge for neutral/positive/negative summary */
+        .insight-badge {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 0.85rem;
+            background: #fef9e3;
+            padding: 8px 12px;
+            border-radius: 40px;
+            color: #b45309;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .form-section,
+            .results-section {
+                padding: 20px;
+            }
+
+            .visualization-row {
+                flex-direction: column;
+            }
+
+            .pie-container canvas {
+                max-height: 210px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Sentiment Analyzer</h1>
+            <p>Discover the emotional tone of any text with advanced AI analysis + Pie chart insight</p>
+        </div>
+
+        <div class="form-section">
+            <form id="sentimentForm">
+                <div class="form-group">
+                    <label for="review">📝 Enter your text for analysis:</label>
+                    <textarea id="review" name="review"
+                        placeholder="Type or paste any text here - reviews, comments, social media posts, emails, or any written content..."
+                        maxlength="5000"></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    ⚡ Analyze Sentiment
+                </button>
+            </form>
+
+            <div class="example-prompts">
+                <h4>💡 Try these examples:</h4>
+                <div class="example-buttons">
+                    <button class="example-btn"
+                        onclick="fillExample('I absolutely love this product! It exceeded all my expectations.')">Positive
+                        Review</button>
+                    <button class="example-btn"
+                        onclick="fillExample('This service was terrible and completely disappointing.')">Negative
+                        Review</button>
+                    <button class="example-btn"
+                        onclick="fillExample('The weather today is okay, nothing special.')">Neutral Comment</button>
+                    <button class="example-btn"
+                        onclick="fillExample('Mixed feelings about this - some parts were great, others not so much.')">Mixed
+                        Sentiment</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div class="review-display">
+                <h3>📋 Analyzed Text:</h3>
+                <div class="review-text" id="reviewText"></div>
+            </div>
+
+            <div class="sentiment-results">
+                <h3>🎯 Sentiment Analysis Results</h3>
+
+                <!-- New row: horizontal bars + pie chart -->
+                <div class="visualization-row">
+                    <div class="bars-container">
+                        <div class="sentiment-bars" id="sentimentBars">
+                            <!-- Dynamic bars will be injected here -->
+                        </div>
+                        <div class="sentiment-legend">
+                            <div class="legend-item">
+                                <div class="legend-color"
+                                    style="background: linear-gradient(135deg, #10b981, #34d399);"></div>
+                                <span>Positive</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color"
+                                    style="background: linear-gradient(135deg, #6b7280, #9ca3af);"></div>
+                                <span>Neutral</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color"
+                                    style="background: linear-gradient(135deg, #ef4444, #f87171);"></div>
+                                <span>Negative</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pie-container">
+                        <h4>📊 Sentiment Distribution (Pie Chart)</h4>
+                        <canvas id="sentimentPieChart" width="250" height="250"
+                            style="max-width:100%; height:auto;"></canvas>
+                        <div class="insight-badge" id="pieInsight">Balanced perspective</div>
+                    </div>
+                </div>
+
+                <div class="confidence-meter">
+                    <div class="confidence-score" id="confidenceScore">--</div>
+                    <div class="confidence-label">Confidence Score</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== ADVANCED SENTIMENT ANALYSIS (preserves original logic but improved consistency) ==========
+        // This function replicates the same core approach as the backend original but with richer keywords 
+        // and same structure as the previous frontend but ensures compatibility with pie chart.
+        // It keeps the same "positive/negative/neutral/confidence" structure.
+        function analyzeSentiment(text) {
+            if (!text.trim()) {
+                return { positive: 0, negative: 0, neutral: 100, confidence: 85 };
+            }
+
+            // Enhanced keyword lexicons for better accuracy while keeping original spirit
+            const positiveWords = [
+                'love', 'great', 'amazing', 'excellent', 'wonderful', 'fantastic', 'good', 'best', 'awesome', 'perfect',
+                'happy', 'beautiful', 'outstanding', 'brilliant', 'incredible', 'glad', 'enjoy', 'impressive', 'recommend',
+                'superb', 'pleased', 'satisfied', 'delighted', 'nice', 'lovely', 'brilliant', 'fabulous'
+            ];
+            const negativeWords = [
+                'hate', 'terrible', 'awful', 'bad', 'worst', 'horrible', 'disappointing', 'poor', 'disgusting', 'sad',
+                'angry', 'frustrating', 'useless', 'annoying', 'waste', 'awful', 'lame', 'mediocre', 'dislike', 'stupid',
+                'worried', 'painful', 'broken', 'failure', 'horrendous'
+            ];
+
+            const lowerText = text.toLowerCase();
+            const words = lowerText.split(/\s+/);
+            let positiveScoreRaw = 0;
+            let negativeScoreRaw = 0;
+
+            // Count matches with weights for intensity (simple occurrence)
+            for (let word of words) {
+                // Clean word from punctuation
+                let cleanWord = word.replace(/[^\w]/g, '');
+                if (positiveWords.some(pw => cleanWord.includes(pw) || pw.includes(cleanWord))) {
+                    positiveScoreRaw += 1.2;
+                }
+                if (negativeWords.some(nw => cleanWord.includes(nw) || nw.includes(cleanWord))) {
+                    negativeScoreRaw += 1.2;
+                }
+            }
+
+            // Also consider common phrases or negation handling (basic)
+            if (lowerText.includes('not good') || lowerText.includes("not great") || lowerText.includes('not amazing')) {
+                positiveScoreRaw = Math.max(0, positiveScoreRaw - 1.5);
+                negativeScoreRaw += 1.2;
+            }
+            if (lowerText.includes('not bad') || lowerText.includes('not terrible')) {
+                negativeScoreRaw = Math.max(0, negativeScoreRaw - 1);
+                positiveScoreRaw += 0.8;
+            }
+
+            // Calculate base percentages relative to total word count (clamped)
+            const totalWords = Math.max(1, words.length);
+            let positivePercent = Math.min(95, (positiveScoreRaw / (totalWords * 0.6)) * 55);
+            let negativePercent = Math.min(95, (negativeScoreRaw / (totalWords * 0.6)) * 55);
+
+            // If both scores are extremely low -> neutral dominant
+            if (positiveScoreRaw < 0.5 && negativeScoreRaw < 0.5) {
+                positivePercent = 5;
+                negativePercent = 5;
+            }
+
+            // Ensure we have some baseline based on length
+            if (totalWords > 0 && positivePercent + negativePercent < 15) {
+                if (positiveScoreRaw > negativeScoreRaw) positivePercent = 20 + Math.random() * 8;
+                else if (negativeScoreRaw > positiveScoreRaw) negativePercent = 20 + Math.random() * 8;
+                else { neutralBias: positivePercent = 10; negativePercent = 10; }
+            }
+
+            // Normalize to sum <= 100, the rest becomes neutral
+            let totalSent = positivePercent + negativePercent;
+            if (totalSent > 100) {
+                let ratio = 100 / totalSent;
+                positivePercent *= ratio;
+                negativePercent *= ratio;
+                totalSent = 100;
+            }
+            let neutralPercent = Math.max(0, 100 - (positivePercent + negativePercent));
+
+            // Final rounding
+            let finalPositive = Math.round(positivePercent);
+            let finalNegative = Math.round(negativePercent);
+            let finalNeutral = Math.round(neutralPercent);
+
+            // ensure total equals 100 due to rounding adjustments
+            let sumFinal = finalPositive + finalNegative + finalNeutral;
+            if (sumFinal !== 100 && sumFinal > 0) {
+                let diff = 100 - sumFinal;
+                if (finalNeutral + diff >= 0) finalNeutral += diff;
+                else if (finalPositive + diff >= 0) finalPositive += diff;
+                else finalNegative += diff;
+            }
+
+            // Confidence based on text length and polarity clarity
+            let clarity = Math.abs(finalPositive - finalNegative) / 100;
+            let lengthBonus = Math.min(30, totalWords * 1.2);
+            let confidenceRaw = 55 + (clarity * 30) + (lengthBonus * 0.5);
+            let confidence = Math.min(97, Math.max(62, Math.round(confidenceRaw)));
+
+            return {
+                positive: finalPositive,
+                negative: finalNegative,
+                neutral: finalNeutral,
+                confidence: confidence
+            };
+        }
+
+        // Global chart instance to avoid multiple canvas re-initialization
+        let pieChart = null;
+
+        // Function to update pie chart and bars using Chart.js
+        function updateVisualizations(results) {
+            // 1. Update Horizontal Bars
+            const sentimentBars = document.getElementById('sentimentBars');
+            sentimentBars.innerHTML = '';
+
+            const { positive, negative, neutral } = results;
+            const totalBar = positive + negative + neutral;
+
+            // If fully neutral or no strong polarity
+            if (positive === 0 && negative === 0 && neutral === 100) {
+                const neutralDiv = document.createElement('div');
+                neutralDiv.className = 'sentiment-bar neutral-bar';
+                neutralDiv.style.width = '100%';
+                neutralDiv.innerHTML = `😐 Neutral ${neutral}%`;
+                sentimentBars.appendChild(neutralDiv);
+            } else {
+                if (positive > 0) {
+                    const posDiv = document.createElement('div');
+                    posDiv.className = 'sentiment-bar positive-bar';
+                    posDiv.style.width = `${positive}%`;
+                    posDiv.innerHTML = `😊 ${positive}%`;
+                    sentimentBars.appendChild(posDiv);
+                }
+                if (negative > 0) {
+                    const negDiv = document.createElement('div');
+                    negDiv.className = 'sentiment-bar negative-bar';
+                    negDiv.style.width = `${negative}%`;
+                    negDiv.innerHTML = `😞 ${negative}%`;
+                    sentimentBars.appendChild(negDiv);
+                }
+                if (neutral > 0) {
+                    const neuDiv = document.createElement('div');
+                    neuDiv.className = 'sentiment-bar neutral-bar';
+                    neuDiv.style.width = `${neutral}%`;
+                    neuDiv.innerHTML = `😐 ${neutral}%`;
+                    sentimentBars.appendChild(neuDiv);
+                }
+            }
+
+            // 2. Update or create Pie Chart
+            const ctx = document.getElementById('sentimentPieChart').getContext('2d');
+            if (pieChart) {
+                pieChart.destroy();
+            }
+
+            pieChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Positive 😊', 'Negative 😞', 'Neutral 😐'],
+                    datasets: [{
+                        data: [positive, negative, neutral],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.85)',
+                            'rgba(239, 68, 68, 0.85)',
+                            'rgba(107, 114, 128, 0.85)'
+                        ],
+                        borderColor: [
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(107, 114, 128, 1)'
+                        ],
+                        borderWidth: 2,
+                        hoverOffset: 12,
+                        cutout: '0%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 11, weight: '500' },
+                                boxWidth: 12,
+                                padding: 10
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    let label = context.label || '';
+                                    let value = context.raw;
+                                    let total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    let percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return `${label}: ${value}% (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        duration: 800
+                    }
+                }
+            });
+
+            // 3. Update insight badge below pie chart
+            const insightDiv = document.getElementById('pieInsight');
+            let insightMsg = '';
+            if (positive > negative && positive > neutral) {
+                insightMsg = '✨ Strong Positive Sentiment — Great vibe!';
+            } else if (negative > positive && negative > neutral) {
+                insightMsg = '⚠️ Predominantly Negative — Needs attention.';
+            } else if (neutral > positive && neutral > negative) {
+                insightMsg = '🍃 Neutral Tone — Balanced or factual.';
+            } else if (positive > 30 && negative > 30) {
+                insightMsg = '⚖️ Mixed emotions — Polarized opinions.';
+            } else if (positive > negative && positive > 25) {
+                insightMsg = '🌟 Leaning Positive — Generally favorable.';
+            } else if (negative > positive && negative > 25) {
+                insightMsg = '💔 Leaning Negative — Could improve.';
+            } else {
+                insightMsg = '📊 Sentiment distributed across categories.';
+            }
+            insightDiv.textContent = insightMsg;
+        }
+
+        // Fill example text into textarea and trigger submit programmatically for smooth UX
+        function fillExample(text) {
+            const textarea = document.getElementById('review');
+            textarea.value = text;
+            // Auto-submit to provide instant feedback like original but with better UI
+            const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+            const form = document.getElementById('sentimentForm');
+            form.dispatchEvent(submitEvent);
+        }
+
+        // Handle form submission
+        document.getElementById('sentimentForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const reviewText = document.getElementById('review').value.trim();
+            if (!reviewText) {
+                alert('✨ Please enter some text to analyze!');
+                return;
+            }
+
+            // Show results section with smooth animation
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.style.display = 'block';
+
+            // Update review display
+            document.getElementById('reviewText').textContent = reviewText;
+
+            // Perform analysis
+            const results = analyzeSentiment(reviewText);
+
+            // Update the horizontal bars and pie chart
+            updateVisualizations(results);
+
+            // Update confidence score display
+            document.getElementById('confidenceScore').textContent = `${results.confidence}%`;
+
+            // Scroll to results for better UX
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        // If the page loads and there is any pre-filled text? not needed, but ensure chart is not undefined.
+        window.addEventListener('load', () => {
+            // Initialize a placeholder empty chart (optional)
+            const placeholderCtx = document.getElementById('sentimentPieChart').getContext('2d');
+            if (pieChart) pieChart.destroy();
+            pieChart = new Chart(placeholderCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Positive', 'Negative', 'Neutral'],
+                    datasets: [{ data: [0, 0, 100], backgroundColor: ['#10b981', '#ef4444', '#9ca3af'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom' } } }
+            });
+            // hide results until first submit
+            document.getElementById('resultsSection').style.display = 'none';
+        });
+    </script>
+</body>
+
+</html>
